@@ -1,5 +1,0 @@
-Rebuild command Windows
-pyinstaller --onedir --console --noconfirm --clean --distpath dist/windows --workpath build/windows --specpath spec/windows --add-data "C:\Users\Adam\source\repos\Radio\bin;bin" Radio.py
-
-Rebuild command Linux
-pyinstaller --onedir --console --noconfirm --clean --distpath dist/linux --workpath build/linux --specpath spec/linux --add-data "/home/vm/Radio/bin:bin" Radio.py
