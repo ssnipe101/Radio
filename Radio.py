@@ -1,13 +1,15 @@
 # TODO Refactor main to smaller functions
-# TODO Decrease duplicate songs
 # TODO Give LLM memory
 # TODO Add a --NoAI argument for startup
 
+from multiprocessing import Value
+from typing import BinaryIO
+from xml.dom.minidom import ReadOnlySequentialNamedNodeMap
 from mutagen.id3 import ID3NoHeaderError
 from cerebras.cloud.sdk import Cerebras
 from mutagen.easyid3 import EasyID3
 from mutagen.flac import FLAC
-from flask import Flask, Response
+from flask import Flask, Response, before_render_template
 from waitress import serve
 import subprocess as SubP
 import threading
@@ -33,21 +35,72 @@ class Queue():
 
 class MusicSelection():
     def __init__(self):
-        self.music = []
+        self.activemusic = []
+        self.inactivemusic = []
         for root, _, files  in os.walk(MUSICPATH):
             for f in files:
                 if f.endswith((".flac", ".mp3")):
-                     self.music.append(os.path.join(root, f))
-        if not self.music :
-            print(f"NO MUSIC IN {MUSICPATH}")
+                     self.activemusic.append(os.path.join(root, f))
+        if not self.activemusic :
+            sys.exit(f"NO MUSIC IN {MUSICPATH}")
             time.sleep(5)
 
+        self.activemusic = quickSort(self.activemusic)
 
-        print("search completed")
-            
+    def resetSongList(self) :
+        for i in range(self.inactivemusic) :
+            self.activelist.append(self.inactivemusic[i])
+            self.inactivelist.pop[i]
+
     def getSong(self):
-        return random.choice(self.music)
+        if not len(self.activemusic) == 0 :
+            selection = random.choice(self.activemusic)
+            pos = binarySearch(self.activemusic, selection)
 
+            self.activemusic.pop(pos)
+
+            self.inactivemusic.append(selection)
+
+            return selection
+        else :
+            self.resetSongList()
+
+def quickSort(L) :
+    leftList = []
+    middleList = []
+    rightList = []
+
+    if len(L) <= 1 :
+        return(L)
+
+    pivot = L[len(L)//2]
+
+    for key in L :
+        if key > pivot :
+            rightList.append(key)
+        elif key < pivot :
+            leftList.append(key)
+        elif key == pivot :
+            middleList.append(key)
+
+    return(quickSort(leftList) + middleList + quickSort(rightList))
+
+def binarySearch(L, key) :
+    left = 0
+    right = (len(L)-1)
+
+    while left <= right:
+        mid = (right + left)//2
+
+        if key < L[mid] :
+            right = mid
+        elif key > L[mid] :
+            left = mid
+        elif key == L[mid] :
+            return mid
+
+    raise ValueError
+ 
 def LLM(firstSong, lastSong):
     try :    
        with open(APIPATH, "r") as f :
@@ -270,7 +323,7 @@ def listener(userID):
             print(f"ERROR TYPE IS {type(e).__name__} LINE 256")
             print(f"ERROR message IS {e} LINE 256")
 
-            time.sleep("5")
+            time.sleep(5)
 
 #driver code
 
