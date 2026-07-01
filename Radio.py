@@ -1,10 +1,7 @@
 # TODO Refactor main to smaller functions
-# TODO Give LLM memory
-# TODO Add a --NoAI argument for startup
+# TODO Give LLM rolling memory
+# TODO Add a NoAI option on startup
 
-from multiprocessing import Value
-from typing import BinaryIO
-from xml.dom.minidom import ReadOnlySequentialNamedNodeMap
 from mutagen.id3 import ID3NoHeaderError
 from cerebras.cloud.sdk import Cerebras
 from mutagen.easyid3 import EasyID3
