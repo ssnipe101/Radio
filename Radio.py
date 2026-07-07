@@ -2,8 +2,6 @@
 # TODO Give LLM rolling memory
 # TODO Add a NoAI option on startup
 
-from tkinter import ACTIVE, LAST
-from winsound import PlaySound
 from mutagen.id3 import ID3NoHeaderError
 from cerebras.cloud.sdk import Cerebras
 from mutagen.easyid3 import EasyID3
