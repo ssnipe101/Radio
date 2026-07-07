@@ -2,6 +2,8 @@
 # TODO Give LLM rolling memory
 # TODO Add a NoAI option on startup
 
+from tkinter import ACTIVE, LAST
+from winsound import PlaySound
 from mutagen.id3 import ID3NoHeaderError
 from cerebras.cloud.sdk import Cerebras
 from mutagen.easyid3 import EasyID3
@@ -28,7 +30,10 @@ class Queue():
         self.list.append(input)
     
     def get(self) : 
-        return self.list.pop(0)
+        if len(self.list) > 0 :
+            return self.list.pop(0)
+        else :
+            return ("EMPTY")
 
 class MusicSelection():
     def __init__(self):
@@ -295,32 +300,29 @@ def main() :
         yield from streamOutput(SPEECHPATH, speechPlayed)
 
 def broadCaster() :
-   global currentChunk
-   while True:
-       print("Broadcast Active")
-       for chunk in main():
-           currentChunk = chunk    
-
-def listener(userID): 
-    global currentChunk 
-    lastChunk = None
-
-    dict = {}
-
-    dict[userID] = Queue()
-
     while True:
-        try :
-            if currentChunk != lastChunk :
-                lastChunk = currentChunk
-                dict[userID].add(currentChunk)
-                yield dict[userID].get()
-        except Exception as e :
+        print("Broadcast Active")
+        for chunk in main():  
+            try :
+                for userID in activelistener :
+                    dict[userID].add(chunk)
+            except Exception as e:
+                print(f"ERROR TYPE IS {type(e).__name__} LINE 309(probably)")
+                print(f"ERROR message IS {e} LINE 309(probably)")
 
-            print(f"ERROR TYPE IS {type(e).__name__} LINE 256")
-            print(f"ERROR message IS {e} LINE 256")
+                time.sleep(5)
 
-            time.sleep(5)
+def listener(userID):
+    try :
+        while True:
+            playChunk = dict[userID].get()
+            if playChunk == "EMPTY":
+                time.sleep(0.1)
+                pass
+            else :
+                yield playChunk
+    except GeneratorExit :
+        activelistener.remove(userID)
 
 #driver code
 
@@ -383,15 +385,32 @@ else :
         with open(os.path.join(PORTPATH, "Port.txt"), "r") as f :
             PORT = f.read().strip()
 
-app = Flask(__name__)
-@app.route("/stream")
-def stream() :
-
-    userID = uuid.uuid4()
-
-    return Response(listener(userID), mimetype="audio/mpeg")
+dict = {}
+activelistener = []
 
 threading.Thread(target=broadCaster, args=(), daemon=True).start()
 
-if __name__ == "__main__":
-    serve(app, host="0.0.0.0", port=PORT)
+app = Flask(__name__)
+@app.route("/stream")
+
+
+def stream() :
+
+    userID = uuid.uuid4()
+    
+    global dict, activelistener
+
+    dict[userID] = Queue()
+    activelistener.append(userID)
+
+    print(activelistener)
+    
+    time.sleep(1)
+
+    return Response(listener(userID), mimetype="audio/mpeg")
+
+try :
+    if __name__ == "__main__":
+        serve(app, host="0.0.0.0", port=PORT)
+except Exception as e :
+    pass
