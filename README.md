@@ -8,4 +8,4 @@ Run once for setup. Then shut it down and follow the steps below.
 **There is a folder called Port inside there is a text file called port.txt. The port used can be changed here. Default is 8080**
 **API.txt should have the API key on the first line and the API URL on the second. This will be filled during the next run if its empty**
 
-Get a free API rate limited key from https://groq.com/. Then use https://api.groq.com/openai/v1 as the API URL
+Get a free API rate limited key from [groq](https://console.groq.com/keys). Then use https://api.groq.com/openai/v1 as the API URL
