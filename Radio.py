@@ -3,10 +3,10 @@
 # TODO Add a NoAI option on startup
 
 from mutagen.id3 import ID3NoHeaderError
-from cerebras.cloud.sdk import Cerebras
+from openai import OpenAI
 from mutagen.easyid3 import EasyID3
 from mutagen.flac import FLAC
-from flask import Flask, Response, before_render_template
+from flask import Flask, Response
 from waitress import serve
 import subprocess as SubP
 import threading
@@ -101,38 +101,25 @@ def binarySearch(L, key) :
 
     raise ValueError
  
-def LLM(firstSong, lastSong):
-    try :    
-       with open(APIPATH, "r") as f :
-           API = f.read().strip()
-
-       if not API :
-           raise ValueError
-    except (FileNotFoundError, ValueError):
-       API = input("Input API key ").strip()
-
-    with open(APIPATH, "w") as f :
-        f.write(API)
-
-    client = Cerebras(
-        api_key = API
+def LLM(API, AIURL,firstSong, lastSong):
+    
+    client = OpenAI(
+        api_key = API,
+        base_url = AIURL,
     )
-    try :
-        chat_completion = client.chat.completions.create(
-            messages=[
-                {
-    
-                
-                    "role": "system",
-                    "content": f"You are a Female radio presenter called Emily, The previous 2 songs played were {firstSong} and {lastSong}(this has already been played) in that order, do not describe your actions only your words, do not make up what is coming up next you dont know. Title, album or artist will say Unknow Artist/Title/Album if its unknow, anmything else and that is the name of the title/artist/album"
-                 
-                }
-        ],
-            model="gpt-oss-120b",
-        )
-        return(chat_completion.choices[0].message.content)
-    
-     
+    try :                 
+        completion = client.chat.completions.create(
+            model = "openai/gpt-oss-120b",
+            
+            messages = [
+                    {
+                        "role": "system",
+                        "content": f"You are a Female radio presenter called Emily, The previous 2 songs played were {firstSong} and {lastSong}(this has already been played) in that order, do not describe your actions only your words, do not make up what is coming up next you dont know. Title, album or artist will say Unknow Artist/Title/Album if its unknow, anmything else and that is the name of the title/artist/album"
+                    }                
+                ],                        
+            )
+        return(completion.choices[0].message.content)
+
     except Exception as e:
 
         try:
@@ -199,7 +186,36 @@ def streamOutput(LOCATION, Metadata) :
 
 def main() :
     
-    activeMusicList = MusicSelection()    
+    activeMusicList = MusicSelection()      
+
+    try :    
+       with open(APIPATH, "r") as f :
+           API = f.readline().strip()
+       if not API :
+           raise ValueError
+    except (FileNotFoundError, ValueError):
+        API = input("Input API key ").strip()
+
+        with open(APIPATH, "w") as f :
+            f.write(API)
+
+    try : 
+        with open(APIPATH, "r") as f:
+            try :
+                AIURL = f.readlines()[1].strip()
+            except : 
+                raise ValueError
+    except (FileNotFoundError, ValueError):
+        temp = input("Input openai for openai"'\n'"Input your API url: ").strip()
+        if temp.lower() == "openai" :
+            AIURL = "https://api.openai.com/v1"
+        else :
+            AIURL = temp
+        del temp
+
+        with open(APIPATH, "a") as f:
+            f.write(f'\n{AIURL}')
+
     while True:      
 
 
@@ -279,7 +295,7 @@ def main() :
         print(f"Up Next : {songPlayed2.get("title",["Unknown"])[0]}")
 
 
-        script = (LLM(songPlayed, songPlayed2))
+        script = (LLM(API, AIURL, songPlayed, songPlayed2))
         
         threading.Thread(target=lambda: asyncio.run(ttsAudioGeneration(script)),daemon=True).start()
 
